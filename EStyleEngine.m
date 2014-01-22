@@ -10,6 +10,7 @@
 #import "EStyleEngine.h"
 #import "EStylesheet.h"
 #import "EStyleRuleset.h"
+#import "EStyleHelper.h"
 
 typedef enum {
     PIXEL_UNIT,
@@ -21,6 +22,10 @@ typedef struct {
     StyleUnitType type;
     CGFloat value;
 } StyleUnit;
+
+typedef NSString ResPath;
+
+typedef NSArray * (^BuildinFuction)(NSString *);
 
 DEF_PSEUDO_CLASS(_none_)
 DEF_PSEUDO_CLASS(normal)
@@ -39,7 +44,7 @@ CONST_STRING(RULE(name), name)
 
 #define DEF_RULE_ACTION(name) \
 DEF_RULE(name) \
-+ (void)apply_ ## name ## _to:(UIView *)styleable param:(NSString *)value pesudoClass: pesudoClass
++ (void)apply_ ## name ## _to:(UIView *)styleable param:(NSString *)value pesudoClass:(NSString *) pesudoClass
 
 #define RULE_ACTION(name) \
 NSSelectorFromString([NSString stringWithFormat:@"apply_%@_to:param:pesudoClass:", name])
@@ -77,7 +82,8 @@ CONST_STRING(SELECTOR(name), value)
 #define IS_SELECTOR(value) \
 (![value hasPrefix:@"@"])
 
-
+#define PESUDOCLASS_HASTYPE_OF(pesudoclass, type) \
+([pesudoclass isEqualToString:PSEUDO_CLASS(type)])
 
 @interface EStyleEngine () 
 
@@ -309,6 +315,18 @@ DEF_SELECTOR(_none_, ^)
 
 DEF_RULE_ACTION(background_color) {
     styleable.backgroundColor = STRING_TO_P(value, UIColor);
+}
+
+DEF_RULE_ACTION(background_image) {
+    do {
+        if(PESUDOCLASS_HASTYPE_OF(pesudoClass, normal)) {
+            //UITableViewCell *cell;
+        
+            //UIImage *image = STRING_TO_P(UIImage, value);
+            //objc_msgSend(styleable, @selector(setBackgroundView:), image);
+            break;
+        }
+    } while (false);
 }
 
 DEF_RULE_ACTION(hidden) {
@@ -606,6 +624,22 @@ DEF_STRING_TO_P(UIColor) {
 
 DEF_STRING_TO(CGFloat) {
     return [value floatValue];
+}
+
+DEF_STRING_TO_P(UIImage) {
+    UIImage *image = nil;
+    do {
+        if([value hasPrefix:@"bundle://"]) {
+            image = [UIImage imageNamed:[EStyleHelper bundleResource:value]];
+            break;
+        }
+        if([value hasPrefix:@"documents://"]) {
+            image = [UIImage imageWithContentsOfFile:[EStyleHelper documentsResource:value]];
+            break;
+        }
+        image = [UIImage imageNamed:value];
+    } while (false);
+    return image;
 }
 
 #ifndef UIViewAutoresizingFlexibleMargins
