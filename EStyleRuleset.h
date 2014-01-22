@@ -15,7 +15,7 @@
 
 @property (readonly, copy) NSString *pesudoClass;
 
-@property (readonly, strong) NSDictionary *ruleset;
+//@property (readonly, strong) NSDictionary *ruleset;
 
 - (id)initWithPesudoclass:(NSString *)pesudoClass;
 
@@ -26,5 +26,7 @@
 - (void)addRulesFrom:(NSDictionary *)rules;
 
 - (void)merge:(EStyleRuleset *)ruleset;
+
+- (void)enumerateRulesAndActionsUsingBlock:(void (^)(id rule, id action, BOOL *stop))block;
 
 @end

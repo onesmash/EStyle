@@ -77,17 +77,9 @@ CONST_STRING(SELECTOR(name), value)
 #define IS_SELECTOR(value) \
 (![value hasPrefix:@"@"])
 
-@implementation RuleActionPair
 
-- (void)dealloc {
-    [_rule release];
-    [_action release];
-    [super dealloc];
-}
 
-@end
-
-@interface EStyleEngine ()
+@interface EStyleEngine () 
 
 @property (nonatomic, retain) NSCharacterSet *selectorSet;
 
@@ -129,9 +121,13 @@ CONST_STRING(SELECTOR(name), value)
 + (void)updateStyleNonRecursively:(id<EStyleable>)styleable {
     NSDictionary *rulesets = [styleable rulesets];
     [rulesets enumerateKeysAndObjectsUsingBlock:^(id pesudoClass, EStyleRuleset *obj, BOOL *stop) {
-        [obj.ruleset enumerateKeysAndObjectsUsingBlock:^(id rule, id action, BOOL *stop) {
+        [obj enumerateRulesAndActionsUsingBlock:^(id rule, id action, BOOL *stop) {
             RUN_RULE_ACTION(styleable, rule, action, pesudoClass);
         }];
+        
+        //[obj.ruleset enumerateKeysAndObjectsUsingBlock:^(id rule, id action, BOOL *stop) {
+        //    RUN_RULE_ACTION(styleable, rule, action, pesudoClass);
+        //}];
     }];
 }
 

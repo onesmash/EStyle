@@ -29,13 +29,6 @@ EXTERN_PSEUDO_CLASS(disable)
 
 @class EStylesheet;
 
-@interface RuleActionPair : NSObject
-
-@property (nonatomic, copy) NSString *rule;
-@property (nonatomic, copy) NSString *action;
-
-@end
-
 @interface EStyleEngine : NSObject
 
 + (id)instance;
@@ -59,6 +52,5 @@ EXTERN_PSEUDO_CLASS(disable)
 + (void)updateStyle:(id<EStyleable>)styleable;
 
 + (void)updateStyleNonRecursively:(id<EStyleable>)styleable;
-
 
 @end
