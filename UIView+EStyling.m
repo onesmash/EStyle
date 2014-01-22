@@ -24,12 +24,12 @@ static NSString *const kEStyleRulesetKey = @"kEStyleRulesetKey";
     objc_setAssociatedObject(self, kEStyleIdKey, styleId, OBJC_ASSOCIATION_COPY);
 }
 
-- (NSSet *)styleClass {
+- (NSString *)styleClass {
     return objc_getAssociatedObject(self, kEStyleClassKey);
 }
 
-- (void)setStyleClass:(NSSet *)styleClass {
-    objc_setAssociatedObject(self, kEStyleClassKey, styleClass, OBJC_ASSOCIATION_RETAIN);
+- (void)setStyleClass:(NSString *)styleClass {
+    objc_setAssociatedObject(self, kEStyleClassKey, styleClass, OBJC_ASSOCIATION_COPY);
 }
 
 - (NSDictionary *)rulesets {

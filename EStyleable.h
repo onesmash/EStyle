@@ -15,7 +15,7 @@
 
 @property (nonatomic, copy) NSString *styleId;
 
-@property (nonatomic, strong) NSSet *styleClass;
+@property (nonatomic, copy) NSString *styleClass;
 
 @property (readonly, nonatomic, weak) id styleParent;
 

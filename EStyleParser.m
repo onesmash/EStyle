@@ -31,6 +31,7 @@
                     if(rulesets == nil) {
                         rulesets = [[NSMutableDictionary alloc] init];
                         [res setObject:rulesets forKey:styleSelector];
+                        [rulesets release];
                     }
                     
                     NSString *pesudoClass = nil;
@@ -45,11 +46,9 @@
                     if(ruleset == nil) {
                         ruleset = [[EStyleRuleset alloc] initWithPesudoclass:pesudoClass];
                         [rulesets setObject:ruleset forKey:pesudoClass];
+                        [ruleset release];
                     }
                     [ruleset addRulesFrom:obj];
-                    
-                    [rulesets release];
-                    [ruleset release];
                     
                 }
             } while (false);

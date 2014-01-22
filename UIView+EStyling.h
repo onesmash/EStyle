@@ -13,7 +13,7 @@
 
 @property (nonatomic, copy) NSString *styleId;
 
-@property (nonatomic, strong) NSSet *styleClass;
+@property (nonatomic, copy) NSString *styleClass;
 
 @property (nonatomic, strong) NSDictionary *rulesets;
 
