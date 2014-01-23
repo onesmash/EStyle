@@ -7,16 +7,16 @@
 //
 
 #import "EStyleRuleset.h"
-#import "EStyleEngine.h"
+#import "EStyleHelper.h"
 
 #define RULE_PRIORTY_LIST_BEGIN \
-rulePriorty = [@{
+rulePriorty = @{
 
 #define DEF_RULE_PRIORTY(rule) \
 @#rule: [NSString stringWithFormat:@"%d", priorty++]
 
 #define RULE_PEIORTY_LIST_END \
-} retain];
+};
 
 static NSDictionary *rulePriorty = nil;
 
@@ -35,6 +35,7 @@ static NSInteger priorty = 0;
                 DEF_RULE_PRIORTY(opacity),
                 DEF_RULE_PRIORTY(hidden),
                 DEF_RULE_PRIORTY(background_color),
+                DEF_RULE_PRIORTY(background_image),
                 DEF_RULE_PRIORTY(border_radius),
                 DEF_RULE_PRIORTY(border_width),
                 DEF_RULE_PRIORTY(border_color),
@@ -56,7 +57,6 @@ static NSInteger priorty = 0;
 - (id)initWithPesudoclass:(NSString *)pesudoClass {
     self = [self init];
     if(self) {
-        [_pesudoClass release];
         _pesudoClass = [pesudoClass copy];
     }
     return self;
@@ -70,12 +70,6 @@ static NSInteger priorty = 0;
         }];
     }
     return self;
-}
-
-- (void)dealloc {
-    [_rawRuleset release];
-    [_pesudoClass release];
-    [super dealloc];
 }
 
 - (NSDictionary *)ruleset {

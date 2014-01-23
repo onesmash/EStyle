@@ -30,7 +30,7 @@
 }
 
 - (BOOL)loadFromSource:(NSString *) source {
-    _styleSheet = [[EStyleParser parse:source] retain];
+    _styleSheet = [EStyleParser parse:source];
     if(_styleSheet) return YES;
     else return NO;
 }
@@ -61,16 +61,8 @@
     return _styleSheet;
 }
 
-- (void)dealloc {
-    [_errors release];
-    [_filePath release];
-    [_pathPrefix release];
-    [_styleSheet release];
-    [super dealloc];
-}
-
 + (instancetype)stylesheet {
-    EStylesheet *sheet = [[[EStylesheet alloc] init] autorelease];
+    EStylesheet *sheet = [[EStylesheet alloc] init];
     return sheet;
 }
 

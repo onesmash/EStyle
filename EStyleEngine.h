@@ -7,25 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "UIView+EStyling.h"
-
-#define CONST_STRING(name, value) \
-NSString *const name = @#value;
-
-#define PSEUDO_CLASS(name) \
-kPseudoClass_ ## name
-
-#define DEF_PSEUDO_CLASS(name) \
-CONST_STRING(PSEUDO_CLASS(name), name)
-
-#define EXTERN_PSEUDO_CLASS(name) \
-extern NSString *const PSEUDO_CLASS(name);
-
-EXTERN_PSEUDO_CLASS(_none_)
-EXTERN_PSEUDO_CLASS(normal)
-EXTERN_PSEUDO_CLASS(selected)
-EXTERN_PSEUDO_CLASS(highlighted)
-EXTERN_PSEUDO_CLASS(disable)
+#import "EStyleable.h"
 
 @class EStylesheet;
 

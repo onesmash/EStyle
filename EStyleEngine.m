@@ -8,86 +8,21 @@
 
 #include <objc/message.h>
 #import "EStyleEngine.h"
+#import "EStyleHelper.h"
 #import "EStylesheet.h"
 #import "EStyleRuleset.h"
-#import "EStyleHelper.h"
+#import "UIView+EStyling.h"
 
-typedef enum {
-    PIXEL_UNIT,
-    PERCENTAGE_UNIT,
-    AUTO_UNIT
-} StyleUnitType;
 
-typedef struct {
-    StyleUnitType type;
-    CGFloat value;
-} StyleUnit;
 
 typedef NSString ResPath;
 
 typedef NSArray * (^BuildinFuction)(NSString *);
 
-DEF_PSEUDO_CLASS(_none_)
-DEF_PSEUDO_CLASS(normal)
-DEF_PSEUDO_CLASS(selected)
-DEF_PSEUDO_CLASS(highlighted)
-DEF_PSEUDO_CLASS(disable)
-
-#define DEF_END \
-}
-
-#define RULE(name) \
-kRule_ ## name
-
-#define DEF_RULE(name) \
-CONST_STRING(RULE(name), name)
-
-#define DEF_RULE_ACTION(name) \
-DEF_RULE(name) \
-+ (void)apply_ ## name ## _to:(UIView *)styleable param:(NSString *)value pesudoClass:(NSString *) pesudoClass
-
-#define RULE_ACTION(name) \
-NSSelectorFromString([NSString stringWithFormat:@"apply_%@_to:param:pesudoClass:", name])
-
-#define RUN_RULE_ACTION(target, rule, value, pesudoClass) \
-objc_msgSend([EStyleEngine class], RULE_ACTION(rule), target, value, pesudoClass)
-
-#define STRING_TO_FUNC(type) \
-_ ## type ## From:
-
-#define STRING_TO_FUNC_P(type) \
-_ ## type ## p ## From:
-
-#define DEF_STRING_TO(type) \
-+ (type) STRING_TO_FUNC(type) (NSString *)value
-
-#define DEF_STRING_TO_P(type) \
-+ (type *) STRING_TO_FUNC_P(type) (NSString *)value
-
-#define STRING_TO(value, type) \
-[EStyleEngine STRING_TO_FUNC(type) value]
-
-#define STRING_TO_P(value, type) \
-[EStyleEngine STRING_TO_FUNC_P(type) value]
-
-#define SELECTOR(name) \
-kSelector_ ## name
-
-#define DEF_SELECTOR(name, value) \
-CONST_STRING(SELECTOR(name), value)
-
-#define SELECTOR_HASTYPE_OF(selector, type) \
-([selector isEqualToString:SELECTOR(type)])
-
-#define IS_SELECTOR(value) \
-(![value hasPrefix:@"@"])
-
-#define PESUDOCLASS_HASTYPE_OF(pesudoclass, type) \
-([pesudoclass isEqualToString:PSEUDO_CLASS(type)])
 
 @interface EStyleEngine () 
 
-@property (nonatomic, retain) NSCharacterSet *selectorSet;
+@property (nonatomic, strong) NSCharacterSet *selectorSet;
 
 @end
 
@@ -96,7 +31,7 @@ CONST_STRING(SELECTOR(name), value)
 - (id)init {
     self = [super init];
     if(self) {
-        _selectorSet = [[NSCharacterSet characterSetWithCharactersInString:@"\x20>+#."] retain];
+        _selectorSet = [NSCharacterSet characterSetWithCharactersInString:@"\x20>+#."];
     }
     return self;
 }
@@ -156,12 +91,12 @@ CONST_STRING(SELECTOR(name), value)
 }
 
 // \x20是空格的十六进制表示
-DEF_SELECTOR(DescendantSelector, \x20)
-DEF_SELECTOR(ChildSelector, >)
-DEF_SELECTOR(AdjacentSiblingSelector, +)
-DEF_SELECTOR(IdSelector, #)
-DEF_SELECTOR(ClassSelector, .)
-DEF_SELECTOR(_none_, ^)
+DEF_SELECTOR(DescendantSelector, \x20);
+DEF_SELECTOR(ChildSelector, >);
+DEF_SELECTOR(AdjacentSiblingSelector, +);
+DEF_SELECTOR(IdSelector, #);
+DEF_SELECTOR(ClassSelector, .);
+DEF_SELECTOR(_none_, ^);
 
 + (void)applyStylesheet:(EStylesheet *)stylesheet toStyleable:(id<EStyleable>)styleable {
     NSDictionary *sheet = stylesheet.sheet;
@@ -284,7 +219,6 @@ DEF_SELECTOR(_none_, ^)
         if([classes isSubsetOfSet:classSet]) {
             [res addObject:obj];
         }
-        [classSet release];
     }];
     if(res.count > 0) return res;
     else return nil;
@@ -313,391 +247,8 @@ DEF_SELECTOR(_none_, ^)
 
 #pragma mark - rule action
 
-DEF_RULE_ACTION(background_color) {
-    styleable.backgroundColor = STRING_TO_P(value, UIColor);
-}
-
-DEF_RULE_ACTION(background_image) {
-    do {
-        if(PESUDOCLASS_HASTYPE_OF(pesudoClass, normal)) {
-            //UITableViewCell *cell;
-        
-            //UIImage *image = STRING_TO_P(UIImage, value);
-            //objc_msgSend(styleable, @selector(setBackgroundView:), image);
-            break;
-        }
-    } while (false);
-}
-
-DEF_RULE_ACTION(hidden) {
-    [styleable setHidden:STRING_TO(value, BOOL)];
-    //objc_msgSend(styleable, @selector(setHidden:), STRING_TO(value, BOOL));
-}
-
-DEF_RULE_ACTION(top) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.y = unit.value;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.y = styleable.superview.bounds.size.height * unit.value;
-            styleable.frame = frame;
-        } break;
-            
-        default:
-            break;
-    }
-}
-
-DEF_RULE_ACTION(left) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.x = unit.value;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.x = styleable.superview.bounds.size.width * unit.value;
-            styleable.frame = frame;
-        } break;
-            
-        default:
-            break;
-    }
-}
-
-DEF_RULE_ACTION(right) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.x = styleable.superview.bounds.size.width - unit.value - frame.size.width;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.x = styleable.superview.bounds.size.width * unit.value - frame.size.width;
-            styleable.frame = frame;
-        } break;
-            
-        default:
-            break;
-    }
-}
-
-DEF_RULE_ACTION(bottom) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.y = styleable.superview.bounds.size.height - unit.value - frame.size.height;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.origin.y = styleable.superview.bounds.size.height * unit.value - frame.size.height;
-            styleable.frame = frame;
-        } break;
-            
-        default:
-            break;
-    }
-}
-
-DEF_RULE_ACTION(opacity) {
-    styleable.alpha = STRING_TO(value, CGFloat);
-}
-
-DEF_RULE_ACTION(border_radius) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    if(unit.type == PIXEL_UNIT) {
-        styleable.layer.cornerRadius = unit.value;
-    }
-}
-
-DEF_RULE_ACTION(border_width) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    if(unit.type == PIXEL_UNIT) {
-        styleable.layer.borderWidth = unit.value;
-    }
-}
-
-DEF_RULE_ACTION(border_color) {
-    UIColor *color = STRING_TO_P(value, UIColor);
-    styleable.layer.borderColor = color.CGColor;
-}
-
-DEF_RULE_ACTION(autoresizing) {
-    styleable.autoresizingMask = STRING_TO(value, UIViewAutoresizing);
-}
-
-DEF_RULE_ACTION(width) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.size.width = unit.value;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.size.width = styleable.superview.bounds.size.width * unit.value;
-            styleable.frame = frame;
-        } break;
-        case AUTO_UNIT: {
-            CGRect frame = styleable.frame;
-            CGFloat height = frame.size.height;
-            [styleable sizeToFit];
-            frame = styleable.frame;
-            frame.size.height = height;
-            styleable.frame = frame;
-        } break;
-        default:
-            break;
-    }
-
-}
-
-DEF_RULE_ACTION(height) {
-    StyleUnit unit = STRING_TO(value, StyleUnit);
-    switch (unit.type) {
-        case PIXEL_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.size.height = unit.value;
-            styleable.frame = frame;
-        } break;
-        case PERCENTAGE_UNIT: {
-            CGRect frame = styleable.frame;
-            frame.size.height = styleable.superview.bounds.size.height * unit.value;
-            styleable.frame = frame;
-        } break;
-        case AUTO_UNIT: {
-            CGRect frame = styleable.frame;
-            CGFloat width = frame.size.width;
-            [styleable sizeToFit];
-            frame = styleable.frame;
-            frame.size.width = width;
-            styleable.frame = frame;
-        } break;
-        default:
-            break;
-    }
-    
-}
-
-DEF_RULE_ACTION(halign) {
-    do {
-        if([value isEqualToString:@"left"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.x = 0;
-            styleable.frame = frame;
-            break;
-        }
-        if([value isEqualToString:@"right"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.x = styleable.superview.bounds.size.width - frame.size.width;
-            styleable.frame = frame;
-            break;
-        }
-        if([value isEqualToString:@"center"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.x = (styleable.superview.bounds.size.width - frame.size.width) / 2;
-            styleable.frame = frame;
-            break;
-        }
-    } while (false);
-}
-
-DEF_RULE_ACTION(valign) {
-    do {
-        if([value isEqualToString:@"top"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.y = 0;
-            styleable.frame = frame;
-            break;
-        }
-        if([value isEqualToString:@"bottom"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.y = styleable.superview.bounds.size.height - frame.size.height;
-            styleable.frame = frame;
-            break;
-        }
-        if([value isEqualToString:@"middle"]) {
-            CGRect frame = styleable.frame;
-            frame.origin.y = (styleable.superview.bounds.size.height - frame.size.height) / 2;
-            styleable.frame = frame;
-            break;
-        }
-    } while (false);
-}
 
 #pragma mark - value convert
 
-DEF_STRING_TO(BOOL) {
-    if([value isEqualToString:@"yes"]) {
-        return YES;
-    } else {
-        return NO;
-    }
-}
-
-DEF_STRING_TO(StyleUnit) {
-    StyleUnit unit;
-    do {
-        if([value hasSuffix:@"px"]) {
-            unit.type = PIXEL_UNIT;
-            unit.value = [NSDecimalNumber decimalNumberWithString: [value substringToIndex:value.length - 1]].floatValue;
-            break;
-        }
-        if([value hasSuffix:@"%"]) {
-            unit.type = PERCENTAGE_UNIT;
-            NSDecimalNumber *v = [NSDecimalNumber decimalNumberWithString: [value substringToIndex:value.length - 1]];
-            unit.value = [v decimalNumberByDividingBy:[NSDecimalNumber decimalNumberWithMantissa:1 exponent:2 isNegative:NO]].floatValue;
-            break;
-        }
-        if([value caseInsensitiveCompare:@"auto"] == NSOrderedSame) {
-            unit.type = AUTO_UNIT;
-            unit.value = 0;
-            break;
-        }
-        if([value isEqualToString:@"0"]) {
-            unit.type = PIXEL_UNIT;
-            unit.value = 0;
-            break;
-        }
-        
-    } while (false);
-    return unit;
-}
-
-#define RGBCOLOR(r,g,b) [UIColor colorWithRed:(r)/255.0f green:(g)/255.0f blue:(b)/255.0f alpha:1]
-
-#define RGBACOLOR(r,g,b,a) [UIColor colorWithRed:(r)/255.0f green:(g)/255.0f blue:(b)/255.0f alpha:(a)]
-
-DEF_STRING_TO_P(UIColor) {
-    UIColor* color = nil;
-    if([value hasPrefix:@"#"]) {
-        unsigned long colorValue = 0;
-        switch (value.length) {
-            case 6 + 1: {
-                colorValue = strtol([value UTF8String] + 1, nil, 16);
-                color = RGBCOLOR(((colorValue & 0xFF0000) >> 16),
-                                 ((colorValue & 0xFF00) >> 8),
-                                 (colorValue & 0xFF));
-            } break;
-            case 8 + 1: {
-                colorValue = strtol([value UTF8String] + 1, nil, 16);
-                color = RGBACOLOR(((colorValue & 0xFF000000) >> 24),
-                                 ((colorValue & 0xFF0000) >> 16),
-                                 ((colorValue & 0xFF00) >> 8),
-                                  (colorValue & 0xFF));
-            } break;
-            default:
-                break;
-        }
-    } else {
-        NSArray *components = [value componentsSeparatedByString:@" "];
-        NSString *red = [components objectAtIndex:0];
-        NSString *green = [components objectAtIndex:1];
-        NSString *yellow = [components objectAtIndex:2];
-        switch (components.count) {
-            case 3: {
-                color = RGBCOLOR(red.floatValue, green.floatValue, yellow.floatValue);
-            } break;
-            case 4: {
-                NSString *alpha = [components objectAtIndex:3];
-                color = RGBACOLOR(red.floatValue, green.floatValue, yellow.floatValue, alpha.floatValue);
-            }
-            default:
-                break;
-        }
-    }
-    
-    return color;
-}
-
-DEF_STRING_TO(CGFloat) {
-    return [value floatValue];
-}
-
-DEF_STRING_TO_P(UIImage) {
-    UIImage *image = nil;
-    do {
-        if([value hasPrefix:@"bundle://"]) {
-            image = [UIImage imageNamed:[EStyleHelper bundleResource:value]];
-            break;
-        }
-        if([value hasPrefix:@"documents://"]) {
-            image = [UIImage imageWithContentsOfFile:[EStyleHelper documentsResource:value]];
-            break;
-        }
-        image = [UIImage imageNamed:value];
-    } while (false);
-    return image;
-}
-
-#ifndef UIViewAutoresizingFlexibleMargins
-#define UIViewAutoresizingFlexibleMargins (UIViewAutoresizingFlexibleLeftMargin \
-                                           | UIViewAutoresizingFlexibleTopMargin \
-                                           | UIViewAutoresizingFlexibleRightMargin \
-                                           | UIViewAutoresizingFlexibleBottomMargin)
-#endif
-
-#ifndef UIViewAutoresizingFlexibleDimensions
-#define UIViewAutoresizingFlexibleDimensions (UIViewAutoresizingFlexibleWidth \
-                                              | UIViewAutoresizingFlexibleHeight)
-#endif
-
-DEF_STRING_TO(UIViewAutoresizing) {
-    UIViewAutoresizing autoresizing = UIViewAutoresizingNone;
-    NSArray *components = [value componentsSeparatedByString:@"|"];
-    for (NSString *v in components) {
-        do {
-            if([v isEqualToString:@"left"]) {
-                autoresizing |= UIViewAutoresizingFlexibleLeftMargin;
-                break;
-            }
-            if([v isEqualToString:@"top"]) {
-                autoresizing |= UIViewAutoresizingFlexibleTopMargin;
-                break;
-            }
-            if([v isEqualToString:@"right"]) {
-                autoresizing |= UIViewAutoresizingFlexibleRightMargin;
-                break;
-            }
-            if([v isEqualToString:@"bottom"]) {
-                autoresizing |= UIViewAutoresizingFlexibleBottomMargin;
-                break;
-            }
-            if([v isEqualToString:@"width"]) {
-                autoresizing |= UIViewAutoresizingFlexibleWidth;
-                break;
-            }
-            if([v isEqualToString:@"height"]) {
-                autoresizing |= UIViewAutoresizingFlexibleHeight;
-                break;
-            }
-            if([v isEqualToString:@"all"]) {
-                autoresizing |= UIViewAutoresizingFlexibleDimensions | UIViewAutoresizingFlexibleMargins;
-                break;
-            }
-            if([v isEqualToString:@"margins"]) {
-                autoresizing |= UIViewAutoresizingFlexibleMargins;
-                break;
-            }
-            if([v isEqualToString:@"dim"]) {
-                autoresizing |= UIViewAutoresizingFlexibleDimensions;
-                break;
-            }
-        } while (false);
-    }
-    return autoresizing;
-}
 
 @end
