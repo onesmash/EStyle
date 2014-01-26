@@ -1,14 +1,13 @@
 //
-//  UITableViewCell+EStyling.h
+//  UILabel+EStyling.h
 //  yixin_iphone
 //
-//  Created by Xuhui on 14-1-22.
+//  Created by Xuhui on 14-1-23.
 //  Copyright (c) 2014年 Netease. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
 
-@interface UITableViewCell (EStyling)
-
+@interface UILabel (EStyling)
 
 @end

@@ -12,9 +12,15 @@ DEF_PSEUDO_CLASS(_none_);
 DEF_PSEUDO_CLASS(normal);
 DEF_PSEUDO_CLASS(selected);
 DEF_PSEUDO_CLASS(highlighted);
-DEF_PSEUDO_CLASS(disable);
+DEF_PSEUDO_CLASS(disabled);
 
 @implementation EStyleHelper
+
++ (NSDictionary *)stringToJsonDict:(NSString *)str {
+    if(str == nil || [str isEqual:[NSNull null]]) return nil;
+    NSData *data = [str dataUsingEncoding:NSUTF8StringEncoding];
+    return [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+}
 
 + (NSString *)bundleResource:(NSString *)path {
     return [path substringFromIndex:9];
@@ -51,12 +57,8 @@ DEF_STRING_TO(StyleUnit) {
             unit.value = 0;
             break;
         }
-        if([value isEqualToString:@"0"]) {
-            unit.type = PIXEL_UNIT;
-            unit.value = 0;
-            break;
-        }
-        
+        unit.type = PIXEL_UNIT;
+        unit.value = value.floatValue;
     } while (false);
     return unit;
 }
@@ -271,7 +273,13 @@ DEF_STRING_TO(CGFloat) {
     return [value floatValue];
 }
 
-DEF_STRING_TO_P(UIImage) {
+typedef UIImage NormalImage;
+
+typedef UIImage ResizableImage;
+
+typedef UIImage ColorImage;
+
+DEF_STRING_TO_P(NormalImage) {
     UIImage *image = nil;
     do {
         if([value hasPrefix:@"bundle://"]) {
@@ -282,24 +290,71 @@ DEF_STRING_TO_P(UIImage) {
             image = [UIImage imageWithContentsOfFile:[EStyleHelper documentsResource:value]];
             break;
         }
-        UIColor *color = STRING_TO_P(value, UIColor);
-        if(color == nil) {
-           image = [UIImage imageNamed:value];
-        }
-        else {
-            CGFloat alphaChannel;
-            [color getRed:NULL green:NULL blue:NULL alpha:&alphaChannel];
-            BOOL opaqueImage = (alphaChannel == 1.0);
-            CGRect rect = CGRectMake(0, 0, 1, 1);
-            UIGraphicsBeginImageContextWithOptions(rect.size, opaqueImage, 0);
-            [color setFill];
-            UIRectFill(rect);
-            image = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        }
-        
+       image = [UIImage imageNamed:value];
     } while (false);
     return image;
+}
+
+DEF_STRING_TO_P(ResizableImage) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    UIImage *image = STRING_TO_P(components[0], NormalImage);
+    StyleUnit _top = STRING_TO(components[1], StyleUnit);
+    StyleUnit _left = STRING_TO(components[2], StyleUnit);
+    StyleUnit _bottom = STRING_TO(components[3], StyleUnit);
+    StyleUnit _right = STRING_TO(components[4], StyleUnit);
+    CGSize size = [image size];
+    CGFloat top = 0;
+    if(_top.type == PIXEL_UNIT) {
+        top = _top.value;
+    } else {
+        top = size.height * _top.value;
+    }
+    CGFloat left = 0;
+    if(_left.type == PIXEL_UNIT) {
+        left = _left.value;
+    } else {
+        left = size.width * _left.value;
+    }
+    CGFloat bottom = 0;
+    if(_bottom.type == PIXEL_UNIT) {
+        bottom = _bottom.value;
+    } else {
+        bottom = size.height * _bottom.value;
+    }
+    CGFloat right = 0;
+    if(_right.type == PIXEL_UNIT) {
+        right = _right.value;
+    } else {
+        right = size.width * _right.value;
+    }
+    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(top, left, bottom, right)];
+}
+
+DEF_STRING_TO_P(ColorImage) {
+    UIColor *color = STRING_TO_P(value, UIColor);
+    CGFloat alphaChannel;
+    [color getRed:NULL green:NULL blue:NULL alpha:&alphaChannel];
+    BOOL opaqueImage = (alphaChannel == 1.0);
+    CGRect rect = CGRectMake(0, 0, 1, 1);
+    UIGraphicsBeginImageContextWithOptions(rect.size, opaqueImage, 0);
+    [color setFill];
+    UIRectFill(rect);
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
+DEF_STRING_TO_P(UIImage) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    if(components.count == 5) {
+        return STRING_TO_P(value, ResizableImage);
+    }
+    UIImage *image = STRING_TO_P(value, NormalImage);
+    if(image) {
+        return image;
+    } else {
+        return STRING_TO_P(value, ColorImage);
+    }
 }
 
 #ifndef UIViewAutoresizingFlexibleMargins
@@ -360,5 +415,88 @@ DEF_STRING_TO(UIViewAutoresizing) {
     return autoresizing;
 }
 
+DEF_STRING_TO(UIControlState) {
+    UIControlState state = UIControlStateNormal;
+    do {
+        if(PESUDOCLASS_HASTYPE_OF(value, normal)) {
+            state = UIControlStateNormal;
+            break;
+        }
+        if(PESUDOCLASS_HASTYPE_OF(value, highlighted)) {
+            state = UIControlStateHighlighted;
+            break;
+        }
+        if(PESUDOCLASS_HASTYPE_OF(value, selected)) {
+            state = UIControlStateSelected;
+            break;
+        }
+        if(PESUDOCLASS_HASTYPE_OF(value, disabled)) {
+            state = UIControlStateDisabled;
+            break;
+        }
+    } while (false);
+    return state;
+}
+
+DEF_STRING_TO_P(StyleUnitArray) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    NSMutableArray *array = [NSMutableArray array];
+    for (NSString *component in components) {
+        StyleUnit unit = STRING_TO(component, StyleUnit);
+        NSValue *tmp = [NSValue valueWithBytes:&unit objCType:@encode(StyleUnit)];
+        [array addObject:tmp];
+    }
+    return  array;
+}
+
+DEF_STRING_TO_P(FilePath) {
+    NSString *filePath = nil;
+    do {
+        if([value hasPrefix:@"bundle://"]) {
+            NSString *path = [EStyleHelper bundleResource:value];
+            NSString *name = [path stringByDeletingPathExtension];
+            NSString *extension = [path pathExtension];
+            filePath = [[NSBundle mainBundle] pathForResource:name ofType:extension];
+            break;
+        }
+        if([value hasPrefix:@"documents://"]) {
+            filePath = [EStyleHelper documentsResource:value];
+            break;
+        }
+    } while (false);
+    return filePath;
+}
+
+DEF_STRING_TO(CGRect) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    StyleUnit x = STRING_TO(components[0], StyleUnit);
+    StyleUnit y = STRING_TO(components[1], StyleUnit);
+    StyleUnit width = STRING_TO(components[2], StyleUnit);
+    StyleUnit height = STRING_TO(components[3], StyleUnit);
+    return CGRectMake(x.value, y.value, width.value, height.value);
+}
+
+DEF_STRING_TO(UITableViewCellStyle) {
+    UITableViewCellStyle cellStyle = UITableViewCellStyleDefault;
+    do {
+        if([value isEqualToString:@"UITableViewCellStyleDefault"]) {
+            cellStyle = UITableViewCellStyleDefault;
+            break;
+        }
+        if([value isEqualToString:@"UITableViewCellStyleValue1"]) {
+            cellStyle = UITableViewCellStyleValue1;
+            break;
+        }
+        if([value isEqualToString:@"UITableViewCellStyleValue2"]) {
+            cellStyle = UITableViewCellStyleValue2;
+            break;
+        }
+        if([value isEqualToString:@"UITableViewCellStyleSubtitle"]) {
+            cellStyle = UITableViewCellStyleSubtitle;
+            break;
+        }
+    } while (false);
+    return cellStyle;
+}
 
 @end

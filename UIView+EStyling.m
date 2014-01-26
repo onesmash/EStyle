@@ -6,13 +6,17 @@
 //  Copyright (c) 2014年 Netease. All rights reserved.
 //
 
+#include <objc/message.h>
 #import <objc/runtime.h>
 #import "UIView+EStyling.h"
 #import "EStyleHelper.h"
+#import "EStylesheet.h"
+#import "EStyleEngine.h"
 
 static NSString *const kEStyleIdKey = @"kEStyleIdKey";
 static NSString *const kEStyleClassKey = @"kEStyleClassKey";
 static NSString *const kEStyleRulesetKey = @"kEStyleRulesetKey";
+static NSString *const kEStylePhaseKey = @"kEStylePhasetKey";
 
 @implementation UIView (EStyling)
 
@@ -21,7 +25,7 @@ static NSString *const kEStyleRulesetKey = @"kEStyleRulesetKey";
 }
 
 - (void)setStyleId:(NSString *)styleId {
-    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleIdKey), styleId, OBJC_ASSOCIATION_COPY);
+    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleIdKey), styleId, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
 - (NSString *)styleClass {
@@ -29,15 +33,32 @@ static NSString *const kEStyleRulesetKey = @"kEStyleRulesetKey";
 }
 
 - (void)setStyleClass:(NSString *)styleClass {
-    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleClassKey), styleClass, OBJC_ASSOCIATION_COPY);
+    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleClassKey), styleClass, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
-- (NSDictionary *)rulesets {
+- (NSMutableDictionary *)rulesets {
     return objc_getAssociatedObject(self, (__bridge const void *)(kEStyleRulesetKey));
 }
 
-- (void)setRulesets:(NSDictionary *)rulesets {
-    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleRulesetKey), rulesets, OBJC_ASSOCIATION_RETAIN);
+- (void)setRulesets:(NSMutableDictionary *)rulesets {
+    objc_setAssociatedObject(self, (__bridge const void *)(kEStyleRulesetKey), rulesets, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (StylePhase)phase {
+    NSValue *phaseValue = objc_getAssociatedObject(self, (__bridge const void *)(kEStylePhaseKey));
+    if(phaseValue) {
+        StylePhase _phase;
+        [phaseValue getValue:&_phase];
+        return _phase;
+    } else {
+        return Idle;
+    }
+    
+}
+
+- (void)setPhase:(StylePhase)phase {
+    NSValue *phaseValue = [NSValue valueWithBytes:&phase objCType:@encode(StylePhase)];
+    objc_setAssociatedObject(self, (__bridge const void *)(kEStylePhaseKey), phaseValue, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
 
@@ -49,12 +70,73 @@ static NSString *const kEStyleRulesetKey = @"kEStyleRulesetKey";
     return [self subviews];
 }
 
+- (void)addCustomSubview:(UIView *)view {
+    [self addSubview:view];
+}
+
+#pragma mark - build phase rule action
+
+DEF_BUILDING_PHASE_RULE_ACTION(class) {
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(initWithFrame) {
+    [self initWithFrame:STRING_TO(value, CGRect)];
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(initWithStyle_reuseIdentifier) {
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(styleId) {
+    self.styleId = value;
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(styleClass) {
+    self.styleClass = value;
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(style) {
+    if(isPaddingRule) {
+        NSString *filePath = STRING_TO_P(value, FilePath);
+        EStylesheet *sheet = [EStylesheet stylesheet];
+        [sheet loadFromFile:filePath];
+        [EStyleEngine applyStylesheet:sheet toStyleable:self];
+        return YES;
+    } else {
+        return  NO;
+    }
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION_WITH_ID_PARAMS(subviews) {
+    NSArray *configs = value;
+    for (NSDictionary *config in configs) {
+        id view = [EStyleEngine buildViewFromConfig:config];
+        [self addSubview:view];
+        //[EStyleEngine updateStyle:view];
+    }
+    return YES;
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(frame) {
+    CGRect frame = STRING_TO(value, CGRect);
+    self.frame = frame;
+    return YES;
+}
+
+#pragma mark - style phase rule action
+
 DEF_RULE_ACTION(background_color) {
     self.backgroundColor = STRING_TO_P(value, UIColor);
+    return YES;
 }
 
 DEF_RULE_ACTION(hidden) {
     [self setHidden:STRING_TO(value, BOOL)];
+    return YES;
     //objc_msgSend(styleable, @selector(setHidden:), STRING_TO(value, BOOL));
 }
 
@@ -75,6 +157,7 @@ DEF_RULE_ACTION(top) {
         default:
             break;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(left) {
@@ -94,6 +177,7 @@ DEF_RULE_ACTION(left) {
         default:
             break;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(right) {
@@ -113,6 +197,7 @@ DEF_RULE_ACTION(right) {
         default:
             break;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(bottom) {
@@ -132,10 +217,12 @@ DEF_RULE_ACTION(bottom) {
         default:
             break;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(opacity) {
     self.alpha = STRING_TO(value, CGFloat);
+    return YES;
 }
 
 DEF_RULE_ACTION(border_radius) {
@@ -143,6 +230,7 @@ DEF_RULE_ACTION(border_radius) {
     if(unit.type == PIXEL_UNIT) {
         self.layer.cornerRadius = unit.value;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(border_width) {
@@ -150,15 +238,18 @@ DEF_RULE_ACTION(border_width) {
     if(unit.type == PIXEL_UNIT) {
         self.layer.borderWidth = unit.value;
     }
+    return YES;
 }
 
 DEF_RULE_ACTION(border_color) {
     UIColor *color = STRING_TO_P(value, UIColor);
     self.layer.borderColor = color.CGColor;
+    return YES;
 }
 
 DEF_RULE_ACTION(autoresizing) {
     self.autoresizingMask = STRING_TO(value, UIViewAutoresizing);
+    return YES;
 }
 
 DEF_RULE_ACTION(width) {
@@ -175,17 +266,21 @@ DEF_RULE_ACTION(width) {
             self.frame = frame;
         } break;
         case AUTO_UNIT: {
-            CGRect frame = self.frame;
-            CGFloat height = frame.size.height;
-            [self sizeToFit];
-            frame = self.frame;
-            frame.size.height = height;
-            self.frame = frame;
+            if(isPaddingRule) {
+                CGRect frame = self.frame;
+                CGFloat height = frame.size.height;
+                [self sizeToFit];
+                frame = self.frame;
+                frame.size.height = height;
+                self.frame = frame;
+            } else {
+                return NO;
+            }
         } break;
         default:
             break;
     }
-    
+    return YES;
 }
 
 DEF_RULE_ACTION(height) {
@@ -202,17 +297,22 @@ DEF_RULE_ACTION(height) {
             self.frame = frame;
         } break;
         case AUTO_UNIT: {
-            CGRect frame = self.frame;
-            CGFloat width = frame.size.width;
-            [self sizeToFit];
-            frame = self.frame;
-            frame.size.width = width;
-            self.frame = frame;
+            if(isPaddingRule) {
+                CGRect frame = self.frame;
+                CGFloat width = frame.size.width;
+                [self sizeToFit];
+                frame = self.frame;
+                frame.size.width = width;
+                self.frame = frame;
+            } else {
+                return NO;
+            }
+            
         } break;
         default:
             break;
     }
-    
+    return YES;
 }
 
 DEF_RULE_ACTION(halign) {
@@ -236,6 +336,7 @@ DEF_RULE_ACTION(halign) {
             break;
         }
     } while (false);
+    return YES;
 }
 
 DEF_RULE_ACTION(valign) {
@@ -259,7 +360,123 @@ DEF_RULE_ACTION(valign) {
             break;
         }
     } while (false);
+    return YES;
 }
+
+DEF_RULE_ACTION(padding_top) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    switch (unit.type) {
+        case PIXEL_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.height += frame.size.height + unit.value;
+            self.frame = frame;
+        } break;
+        case PERCENTAGE_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.height *= 1 + unit.value;
+            self.frame = frame;
+            break;
+        }
+            
+        default:
+            break;
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_left) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    switch (unit.type) {
+        case PIXEL_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.width += frame.size.width + unit.value;
+            self.frame = frame;
+        } break;
+        case PERCENTAGE_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.width *= 1 + unit.value;
+            self.frame = frame;
+            break;
+        }
+            
+        default:
+            break;
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_bottom) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    switch (unit.type) {
+        case PIXEL_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.height += frame.size.height + unit.value;
+            self.frame = frame;
+        } break;
+        case PERCENTAGE_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.height *= 1 + unit.value;
+            self.frame = frame;
+            break;
+        }
+            
+        default:
+            break;
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_right) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    switch (unit.type) {
+        case PIXEL_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.width += frame.size.width + unit.value;
+            self.frame = frame;
+        } break;
+        case PERCENTAGE_UNIT: {
+            CGRect frame = self.frame;
+            frame.size.width *= 1 + unit.value;
+            self.frame = frame;
+        } break;
+            
+        default:
+            break;
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    switch (components.count) {
+        case 1: {
+            RUN_RULE_ACTION(self, RULE(padding_top), value, pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_left), value, pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_bottom), value, pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_right), value, pesudoClass, NO);
+        } break;
+        case 2: {
+            RUN_RULE_ACTION(self, RULE(padding_top), components[0], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_left), components[1], pesudoClass, NO);
+        } break;
+        case 3: {
+            RUN_RULE_ACTION(self, RULE(padding_top), components[0], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_left), components[1], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_bottom), components[2], pesudoClass, NO);
+        } break;
+        case 4: {
+            RUN_RULE_ACTION(self, RULE(padding_top), components[0], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_left), components[1], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_bottom), components[2], pesudoClass, NO);
+            RUN_RULE_ACTION(self, RULE(padding_right), components[3], pesudoClass, NO);
+        } break;
+            
+        default:
+            break;
+    }
+    return YES;
+}
+
 
 
 @end

@@ -33,6 +33,10 @@
 
 + (void)updateStyle:(id<EStyleable>)styleable;
 
-+ (void)updateStyleNonRecursively:(id<EStyleable>)styleable;
++ (NSArray *)updateStyleNonRecursively:(id<EStyleable>)styleable isPadding:(BOOL)isPadding;
+
++ (id)buildViewFromSource:(NSString *)source;
+
++ (id)buildViewFromConfig:(NSDictionary *)config;
 
 @end

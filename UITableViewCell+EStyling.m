@@ -11,6 +11,16 @@
 
 @implementation UITableViewCell (EStyling)
 
+- (void)addCustomSubview:(UIView *)view {
+    [self.contentView addSubview:view];
+}
+
+DEF_BUILDING_PHASE_RULE_ACTION(initWithStyle_reuseIdentifier) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    [self initWithStyle:STRING_TO(components[0], UITableViewCellStyle) reuseIdentifier:components[1]];
+    return YES;
+}
+
 DEF_RULE_ACTION(background_image) {
     UIImage *image = STRING_TO_P(value, UIImage);
     UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
@@ -24,6 +34,7 @@ DEF_RULE_ACTION(background_image) {
             break;
         }
     } while (false);
+    return YES;
     
 }
 
@@ -40,7 +51,7 @@ DEF_RULE_ACTION(background_color) {
             break;
         }
     } while (false);
-    
+    return YES;
 }
 
 @end

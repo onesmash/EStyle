@@ -1,0 +1,71 @@
+//
+//  UIButton+EStyling.m
+//  yixin_iphone
+//
+//  Created by Xuhui on 14-1-24.
+//  Copyright (c) 2014年 Netease. All rights reserved.
+//
+
+#include <objc/message.h>
+#import "UIButton+EStyling.h"
+#import "EStyleHelper.h"
+
+@implementation UIButton (EStyling)
+
+DEF_RULE_ACTION(text) {
+    UIControlState state = STRING_TO(pesudoClass, UIControlState);
+    [self setTitle:value forState:state];
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_top) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    if(unit.type == PIXEL_UNIT) {
+        self.contentEdgeInsets = UIEdgeInsetsMake(unit.value, 0, 0, 0);
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_left) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    if(unit.type == PIXEL_UNIT) {
+        self.contentEdgeInsets = UIEdgeInsetsMake(0, unit.value, 0, 0);
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_bottom) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    if(unit.type == PIXEL_UNIT) {
+        self.contentEdgeInsets = UIEdgeInsetsMake(0, 0, unit.value, 0);
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding_right) {
+    StyleUnit unit = STRING_TO(value, StyleUnit);
+    if(unit.type == PIXEL_UNIT) {
+        self.contentEdgeInsets = UIEdgeInsetsMake(0, 0, 0, unit.value);
+    }
+    return YES;
+}
+
+DEF_RULE_ACTION(padding) {
+    StyleUnitArray *array = STRING_TO_P(value, StyleUnitArray);
+    CGFloat insets[] = {0, 0, 0, 0};
+    for (NSInteger i = 0; i < array.count; i++) {
+        NSValue *tmp = array[i];
+        StyleUnit unit;
+        [tmp getValue:&unit];
+        insets[i] = unit.value;
+    }
+    if(array.count == 1) {
+        self.contentEdgeInsets = UIEdgeInsetsMake(insets[0], insets[0], insets[0], insets[0]);
+    } else {
+        self.contentEdgeInsets = UIEdgeInsetsMake(insets[0], insets[1], insets[2], insets[3]);
+    }
+    return YES;
+}
+
+
+@end

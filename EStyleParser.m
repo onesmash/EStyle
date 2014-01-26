@@ -37,7 +37,7 @@
                     NSString *pesudoClass = nil;
 
                     if(strs.count < 2) {
-                        pesudoClass = PSEUDO_CLASS(_none_);
+                        pesudoClass = PSEUDO_CLASS(normal);
                     } else {
                         pesudoClass = [strs objectAtIndex:1];
                     }

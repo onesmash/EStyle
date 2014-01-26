@@ -8,6 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
+typedef enum {
+    Building,
+    Styling,
+    Idle
+} StylePhase;
+
 
 @protocol EStyleable <NSObject>
 
@@ -21,12 +27,14 @@
 
 @property (readonly, nonatomic, copy) NSArray *styleChildren;
 
+@property (nonatomic) StylePhase phase;
+
 @optional
 
-@property (nonatomic, strong) NSDictionary *rulesets;
+@property (nonatomic, strong) NSMutableDictionary *rulesets;
 
-//- (void)updateStyle;
+- (void)addCustomSubview:(UIView *)view;
 
-//- (void)updateStyleNonRecursively;
+- (UIView *)creatViewFromConfig:(NSDictionary *)config;
 
 @end

@@ -21,12 +21,16 @@
 
 - (id)initWithPesudoclass:(NSString *)pesudoClass from:(NSDictionary *)dict;
 
-- (void)addRule:(NSString *)rule withValue:(NSString *)value;
+- (void)addRule:(NSString *)rule withValue:(NSString *)action;
 
 - (void)addRulesFrom:(NSDictionary *)rules;
+
+- (void)removeRule:(NSString *)rule;
 
 - (void)merge:(EStyleRuleset *)ruleset;
 
 - (void)enumerateRulesAndActionsUsingBlock:(void (^)(id rule, id action, BOOL *stop))block;
+
+- (NSString *)actionForRule:(NSString *)rule;
 
 @end

@@ -53,23 +53,39 @@ typedef NSArray * (^BuildinFuction)(NSString *);
 }
 
 + (void)updateStyle:(id<EStyleable>)styleable {
-    [EStyleEngine updateStyleNonRecursively:styleable];
+    NSArray *paddingRule = [EStyleEngine updateStyleNonRecursively:styleable isPadding:NO];
     for (id<EStyleable> child in [styleable styleChildren]) {
         [EStyleEngine updateStyle:child];
     }
+    if(paddingRule.count > 0) {
+        [EStyleEngine updateStyleNonRecursively:styleable isPadding:YES];
+    }
+    //[styleable setPhase:Idle];
 }
 
-+ (void)updateStyleNonRecursively:(id<EStyleable>)styleable {
++ (NSArray *)updateStyleNonRecursively:(id<EStyleable>)styleable isPadding:(BOOL)isPadding {
+    NSMutableArray *paddingRules = [NSMutableArray array];
     NSDictionary *rulesets = [styleable rulesets];
     [rulesets enumerateKeysAndObjectsUsingBlock:^(id pesudoClass, EStyleRuleset *obj, BOOL *stop) {
         [obj enumerateRulesAndActionsUsingBlock:^(id rule, id action, BOOL *stop) {
-            RUN_RULE_ACTION(styleable, rule, action, pesudoClass);
+            if([styleable phase] == Styling) {
+                BOOL excuted = RUN_RULE_ACTION(styleable, rule, action, pesudoClass, isPadding);
+                if(!isPadding && !excuted) {
+                    [paddingRules addObject:rule];
+                }
+            } else if([styleable phase] == Building) {
+                BOOL excuted = RUN_BUILDING_PHASE_RULE_ACTION(styleable, rule, action, pesudoClass, isPadding);
+                if(!isPadding && !excuted) {
+                    [paddingRules addObject:rule];
+                }
+                if(excuted) {
+                    [obj removeRule:rule];
+                }
+            }
+            
         }];
-        
-        //[obj.ruleset enumerateKeysAndObjectsUsingBlock:^(id rule, id action, BOOL *stop) {
-        //    RUN_RULE_ACTION(styleable, rule, action, pesudoClass);
-        //}];
     }];
+    return paddingRules;
 }
 
 + (id)stylesheetFromSource:(NSString *)source {
@@ -98,14 +114,31 @@ DEF_SELECTOR(IdSelector, #);
 DEF_SELECTOR(ClassSelector, .);
 DEF_SELECTOR(_none_, ^);
 
++ (void)mergeRulesets:(NSDictionary *)src toRulesets:(NSMutableDictionary *)dest {
+    [src enumerateKeysAndObjectsUsingBlock:^(NSString *pesudoClass, EStyleRuleset *ruleset, BOOL *stop) {
+        EStyleRuleset *destRuleset = dest[pesudoClass];
+        if(destRuleset) {
+            [destRuleset merge:ruleset];
+        } else {
+            [dest setObject:ruleset forKey:pesudoClass];
+        }
+    }];
+}
+
 + (void)applyStylesheet:(EStylesheet *)stylesheet toStyleable:(id<EStyleable>)styleable {
     NSDictionary *sheet = stylesheet.sheet;
     if(!styleable) return;
-    [sheet enumerateKeysAndObjectsUsingBlock:^(id selector, id rulesets, BOOL *stop) {
+    [sheet enumerateKeysAndObjectsUsingBlock:^(id selector, NSDictionary *rulesets, BOOL *stop) {
         if(IS_SELECTOR(selector)) {
             NSArray *styleables = [EStyleEngine selectFromStyleable:styleable usingSelector:selector];
             [styleables enumerateObjectsUsingBlock:^(id<EStyleable> s, NSUInteger idx, BOOL *stop) {
-                [s setRulesets:rulesets];
+                if([s rulesets]) {
+                    [EStyleEngine mergeRulesets:rulesets toRulesets:[s rulesets]];
+                } else {
+                    NSMutableDictionary *tmp = [NSMutableDictionary dictionaryWithDictionary:rulesets];
+                    [s setRulesets:tmp];
+                }
+                [s setPhase:Styling];
             }];
         }
     }];
@@ -243,6 +276,46 @@ DEF_SELECTOR(_none_, ^);
     for (id<EStyleable> style in [styleable styleChildren]) {
         [EStyleEngine flatten:style to:set];
     }
+}
+
++ (id)buildViewFromSource:(NSString *)source {
+    NSDictionary *config = [EStyleHelper stringToJsonDict:source];
+    UIView *view = [EStyleEngine buildViewFromConfig:config];
+    [EStyleEngine updateStyle:view];
+    /*
+    NSString *style = config[@"style"];
+    if(style == nil) return view;
+    NSString *filePath = nil;
+    do {
+        if([style hasPrefix:@"bundle://"]) {
+            NSString *path = [EStyleHelper bundleResource:style];
+            NSString *name = [path stringByDeletingPathExtension];
+            NSString *extension = [path pathExtension];
+            filePath = [[NSBundle mainBundle] pathForResource:name ofType:extension];
+            break;
+        }
+        if([style hasPrefix:@"documents://"]) {
+            filePath = [EStyleHelper documentsResource:style];
+            break;
+        }
+    } while (false);
+    EStylesheet *sheet = [EStylesheet stylesheet];
+    [sheet loadFromFile:filePath];
+    [EStyleEngine applyStylesheet:sheet toStyleable:view];
+     */
+    return view;
+}
+
++ (id)buildViewFromConfig:(NSDictionary *)config {
+    NSString *class = config[@"class"];
+    UIView *view = [[NSClassFromString(class) alloc] init];
+    view.phase = Building;
+    EStyleRuleset *ruleset = [[EStyleRuleset alloc] initWithPesudoclass:PSEUDO_CLASS(normal)];
+    [ruleset addRulesFrom:config];
+    NSMutableDictionary *rulesets = [NSMutableDictionary dictionaryWithObject:ruleset forKey:ruleset.pesudoClass];
+    [view setRulesets:rulesets];
+    //[EStyleEngine updateStyleNonRecursively:view isPadding:NO];
+    return view;
 }
 
 #pragma mark - rule action

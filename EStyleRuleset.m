@@ -32,6 +32,13 @@ static NSInteger priorty = 0;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
             RULE_PRIORTY_LIST_BEGIN
+                DEF_RULE_PRIORTY(class),
+                DEF_RULE_PRIORTY(initWithFrame),
+                DEF_RULE_PRIORTY(initWithStyle_reuseIdentifier),
+                DEF_RULE_PRIORTY(styleId),
+                DEF_RULE_PRIORTY(styleClass),
+                DEF_RULE_PRIORTY(frame),
+                DEF_RULE_PRIORTY(subviews),
                 DEF_RULE_PRIORTY(opacity),
                 DEF_RULE_PRIORTY(hidden),
                 DEF_RULE_PRIORTY(background_color),
@@ -39,14 +46,21 @@ static NSInteger priorty = 0;
                 DEF_RULE_PRIORTY(border_radius),
                 DEF_RULE_PRIORTY(border_width),
                 DEF_RULE_PRIORTY(border_color),
+                DEF_RULE_PRIORTY(text),
                 DEF_RULE_PRIORTY(width),
                 DEF_RULE_PRIORTY(height),
                 DEF_RULE_PRIORTY(left),
                 DEF_RULE_PRIORTY(top),
                 DEF_RULE_PRIORTY(right),
                 DEF_RULE_PRIORTY(bottom),
+                DEF_RULE_PRIORTY(padding_top),
+                DEF_RULE_PRIORTY(padding_left),
+                DEF_RULE_PRIORTY(padding_bottom),
+                DEF_RULE_PRIORTY(padding_right),
+                DEF_RULE_PRIORTY(padding),
                 DEF_RULE_PRIORTY(halign),
-                DEF_RULE_PRIORTY(valign)
+                DEF_RULE_PRIORTY(valign),
+                DEF_RULE_PRIORTY(style)
             RULE_PEIORTY_LIST_END
 
         });
@@ -76,21 +90,30 @@ static NSInteger priorty = 0;
     return _rawRuleset;
 }
 
-- (void)addRule:(NSString *)rule withValue:(NSString *)value {
-    NSString *ruleWithPriorty = [NSString stringWithFormat:@"%@-%@", rule, [rulePriorty objectForKey:rule]];
-    [_rawRuleset setObject:value forKey:ruleWithPriorty];
+- (NSString *)ruleWithPriortyfFrom:(NSString *)rule {
+    return [NSString stringWithFormat:@"%@-%@", rule, [rulePriorty objectForKey:rule]];
+}
+
+- (void)addRule:(NSString *)rule withValue:(NSString *)action {
+    NSString *ruleWithPriorty = [self ruleWithPriortyfFrom:rule];
+    [_rawRuleset setObject:action forKey:ruleWithPriorty];
 }
 
 - (void)addRulesFrom:(NSDictionary *)rules {
-    [rules enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        [self addRule:key withValue:obj];
+    [rules enumerateKeysAndObjectsUsingBlock:^(id rule, id action, BOOL *stop) {
+        [self addRule:rule withValue:action];
     }];
+}
+
+- (void)removeRule:(NSString *)rule {
+    NSString *ruleWithPriorty = [self ruleWithPriortyfFrom:rule];
+    [_rawRuleset removeObjectForKey:ruleWithPriorty];
 }
 
 - (void)merge:(EStyleRuleset *)ruleset {
     if([self.pesudoClass isEqualToString:ruleset.pesudoClass]) {
-        [ruleset.ruleset enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-            [self addRule:key withValue:obj];
+        [ruleset.ruleset enumerateKeysAndObjectsUsingBlock:^(id rule, id action, BOOL *stop) {
+            [_rawRuleset setObject:action forKey:rule];
         }];
     } else {
         return;
@@ -118,6 +141,11 @@ static NSInteger priorty = 0;
         if(!stop) block(realRule, [_rawRuleset objectForKey:rule], &stop);
         else break;
     }
+}
+
+- (NSString *)actionForRule:(NSString *)rule {
+    NSString *ruleWithPriorty = [self ruleWithPriortyfFrom:rule];
+    return [_rawRuleset objectForKey:ruleWithPriorty];
 }
 
 @end
