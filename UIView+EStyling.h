@@ -25,4 +25,6 @@
 
 - (void)addCustomSubview:(UIView *)view;
 
+- (void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass;
+
 @end

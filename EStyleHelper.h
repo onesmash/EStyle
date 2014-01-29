@@ -110,6 +110,8 @@ typedef struct {
     CGFloat value;
 } StyleUnit;
 
+typedef NSArray Shadow;
+
 typedef NSArray StyleUnitArray;
 
 typedef NSString FilePath;
@@ -143,5 +145,11 @@ DEF_STRING_TO_P(FilePath);
 DEF_STRING_TO(CGRect);
 
 DEF_STRING_TO(UITableViewCellStyle);
+
+DEF_STRING_TO_P(UIFont);
+
+DEF_STRING_TO(NSTextAlignment);
+
+DEF_STRING_TO_P(Shadow);
 
 @end

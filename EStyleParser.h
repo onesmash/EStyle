@@ -12,4 +12,6 @@
 
 + (NSDictionary *)parse:(NSString *)source;
 
++ (NSDictionary *)parseFromDict:(NSDictionary *)dict;
+
 @end

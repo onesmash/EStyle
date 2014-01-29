@@ -279,6 +279,8 @@ typedef UIImage ResizableImage;
 
 typedef UIImage ColorImage;
 
+typedef UIImage WebImage;
+
 DEF_STRING_TO_P(NormalImage) {
     UIImage *image = nil;
     do {
@@ -497,6 +499,68 @@ DEF_STRING_TO(UITableViewCellStyle) {
         }
     } while (false);
     return cellStyle;
+}
+
+DEF_STRING_TO_P(UIFont) {
+    // style|name| size = 17
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    UIFont *font = nil;
+    switch (components.count) {
+        case 1: {
+            font = [UIFont systemFontOfSize:STRING_TO(components[0], CGFloat)];
+        } break;
+        case 2: {
+            NSString *style = components[0];
+            CGFloat size = STRING_TO(components[1], CGFloat);
+            do {
+                if([style isEqualToString:@"normal"]) {
+                    font = [UIFont systemFontOfSize:size];
+                    break;
+                }
+                if([style isEqualToString:@"bold"]) {
+                    font = [UIFont boldSystemFontOfSize:size];
+                    break;
+                }
+                if([style isEqualToString:@"italic"]) {
+                    font = [UIFont italicSystemFontOfSize:size];
+                    break;
+                }
+                font = [UIFont fontWithName:style size:size];
+            } while (false);
+        } break;
+        default:
+            break;
+    }
+    return font;
+}
+
+DEF_STRING_TO(NSTextAlignment) {
+    NSTextAlignment textAlign = NSTextAlignmentLeft;
+    do {
+        if([value isEqualToString:@"left"]) {
+            textAlign = NSTextAlignmentLeft;
+            break;
+        }
+        if([value isEqualToString:@"center"]) {
+            textAlign = NSTextAlignmentCenter;
+            break;
+        }
+        if([value isEqualToString:@"right"]) {
+            textAlign = NSTextAlignmentRight;
+            break;
+        }
+    } while (false);
+    return textAlign;
+}
+
+DEF_STRING_TO_P(Shadow) {
+    NSArray *components = [value componentsSeparatedByString:@" "];
+    CGFloat hShadow = ((NSString *)components[0]).floatValue;
+    CGFloat vShadow = ((NSString *)components[1]).floatValue;
+    CGSize _shadowSize = CGSizeMake(hShadow, vShadow);
+    NSValue *shadowSize = [NSValue valueWithBytes:&_shadowSize objCType:@encode(CGSize)];
+    UIColor *color = STRING_TO_P(components[2], UIColor);
+    return [NSArray arrayWithObjects:shadowSize, color, nil];
 }
 
 @end

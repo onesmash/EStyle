@@ -67,5 +67,43 @@ DEF_RULE_ACTION(padding) {
     return YES;
 }
 
+DEF_RULE_ACTION(font) {
+    UIFont *font = STRING_TO_P(value, UIFont);
+    self.titleLabel.font = font;
+    return YES;
+}
+
+DEF_RULE_ACTION(text_color) {
+    UIColor *color = STRING_TO_P(value, UIColor);
+    UIControlState state = STRING_TO(pesudoClass, UIControlState);
+    [self setTitleColor:color forState:state];
+    return YES;
+}
+
+DEF_RULE_ACTION(image) {
+    UIImage *image = STRING_TO_P(value, UIImage);
+    UIControlState state = STRING_TO(pesudoClass, UIControlState);
+    [self setImage:image forState:state];
+    return YES;
+}
+
+DEF_RULE_ACTION(text_align) {
+    NSTextAlignment textAlign = STRING_TO(value, NSTextAlignment);
+    self.titleLabel.textAlignment = textAlign;
+    return YES;
+}
+
+DEF_RULE_ACTION(text_shadow) {
+    NSArray *shadow = STRING_TO_P(value, Shadow);
+    NSValue *_shadowOffset = shadow[0];
+    CGSize shadowOffset;
+    [_shadowOffset getValue:&shadowOffset];
+    UIColor *color = shadow[1];
+    self.titleLabel.shadowOffset = shadowOffset;
+    UIControlState state = STRING_TO(pesudoClass, UIControlState);
+    [self setTitleShadowColor:color forState:state];
+    return YES;
+}
+
 
 @end

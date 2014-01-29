@@ -23,7 +23,9 @@
 
 + (instancetype)stylesheet;
 
-- (BOOL)loadFromSource:(NSString *) source;
+- (BOOL)loadFromDict:(NSDictionary *)dict;
+
+- (BOOL)loadFromSource:(NSString *)source;
 
 - (BOOL)loadFromFile:(NSString *)filePath;
 

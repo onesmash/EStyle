@@ -37,4 +37,6 @@ typedef enum {
 
 - (UIView *)creatViewFromConfig:(NSDictionary *)config;
 
+- (void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass;
+
 @end

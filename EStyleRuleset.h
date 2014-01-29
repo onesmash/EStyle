@@ -15,7 +15,7 @@
 
 @property (readonly, copy) NSString *pesudoClass;
 
-//@property (readonly, strong) NSDictionary *ruleset;
+@property (readonly, strong) NSDictionary *ruleset;
 
 - (id)initWithPesudoclass:(NSString *)pesudoClass;
 

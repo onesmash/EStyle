@@ -17,6 +17,10 @@
 
 + (NSArray *)selectFromStyleable:(id<EStyleable>)styleable usingSelector:(NSString *)source;
 
++ (id<EStyleable>)selectFromStyleable:(id<EStyleable>)styleable byID:(NSString *)Id;
+
++ (NSArray *)selectFromStyleable:(id<EStyleable>)styleable byClasses:(NSSet *)classes;
+
 + (id)stylesheetFromSource:(NSString *)source;
 
 + (id)stylesheetFromFile:(NSString *)filePath;
@@ -35,8 +39,12 @@
 
 + (NSArray *)updateStyleNonRecursively:(id<EStyleable>)styleable isPadding:(BOOL)isPadding;
 
++ (void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass toStyleavle:(id<EStyleable>)styleable;
+
++ (id)buildViewFromDict:(NSDictionary *)dict;
+
 + (id)buildViewFromSource:(NSString *)source;
 
-+ (id)buildViewFromConfig:(NSDictionary *)config;
++ (id)buildViewFromConfigNonRecursively:(NSDictionary *)config;
 
 @end

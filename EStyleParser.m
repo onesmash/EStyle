@@ -12,11 +12,10 @@
 
 @implementation EStyleParser
 
-+ (NSDictionary *)parse:(NSString *)source {
-    NSDictionary *json = [EStyleParser stringToJsonDict:source];
++ (NSDictionary *)parseFromDict:(NSDictionary *)dict {
     NSMutableDictionary *res = [NSMutableDictionary dictionary];
-    if(json != nil) {
-        [json enumerateKeysAndObjectsUsingBlock:^(NSString* key, id obj, BOOL *stop) {
+    if(dict != nil) {
+        [dict enumerateKeysAndObjectsUsingBlock:^(NSString* key, id obj, BOOL *stop) {
             do {
                 if([key hasPrefix:@"@"]) {
                     [res setObject:key forKey:obj];
@@ -35,7 +34,7 @@
                     }
                     
                     NSString *pesudoClass = nil;
-
+                    
                     if(strs.count < 2) {
                         pesudoClass = PSEUDO_CLASS(normal);
                     } else {
@@ -58,6 +57,12 @@
     } else {
         return nil;
     }
+
+}
+
++ (NSDictionary *)parse:(NSString *)source {
+    NSDictionary *json = [EStyleParser stringToJsonDict:source];
+    return [EStyleParser parseFromDict:json];
 }
 
 + (NSDictionary *)stringToJsonDict:(NSString *)str {

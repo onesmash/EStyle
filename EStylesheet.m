@@ -35,6 +35,12 @@
     else return NO;
 }
 
+- (BOOL)loadFromDict:(NSDictionary *)dict {
+    _styleSheet = [EStyleParser parseFromDict:dict];
+    if(_styleSheet) return YES;
+    else return NO;
+}
+
 - (BOOL)loadFromFile:(NSString *)filePath {
     if([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
         self.filePath = filePath;

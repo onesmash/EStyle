@@ -17,7 +17,7 @@
 
 typedef NSString ResPath;
 
-typedef NSArray * (^BuildinFuction)(NSString *);
+typedef id (^BuildinFuction)(NSString *);
 
 
 @interface EStyleEngine () 
@@ -86,6 +86,19 @@ typedef NSArray * (^BuildinFuction)(NSString *);
         }];
     }];
     return paddingRules;
+}
+
++ (void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass toStyleavle:(id<EStyleable>)styleable {
+    EStyleRuleset *ruleset = [[EStyleRuleset alloc] initWithPesudoclass:pseudoClass];
+    [ruleset addRulesFrom:rules];
+    NSMutableDictionary *tmp = [styleable rulesets];
+    if(!tmp) {
+        tmp = [NSMutableDictionary dictionary];
+    }
+    [EStyleEngine mergeRulesets:ruleset.ruleset toRulesets:tmp];
+    [styleable setRulesets:tmp];
+    [styleable setPhase:Styling];
+    [EStyleEngine updateStyle:styleable];
 }
 
 + (id)stylesheetFromSource:(NSString *)source {
@@ -278,35 +291,18 @@ DEF_SELECTOR(_none_, ^);
     }
 }
 
-+ (id)buildViewFromSource:(NSString *)source {
-    NSDictionary *config = [EStyleHelper stringToJsonDict:source];
-    UIView *view = [EStyleEngine buildViewFromConfig:config];
++ (id)buildViewFromDict:(NSDictionary *)dict {
+    UIView *view = [EStyleEngine buildViewFromConfigNonRecursively:dict];
     [EStyleEngine updateStyle:view];
-    /*
-    NSString *style = config[@"style"];
-    if(style == nil) return view;
-    NSString *filePath = nil;
-    do {
-        if([style hasPrefix:@"bundle://"]) {
-            NSString *path = [EStyleHelper bundleResource:style];
-            NSString *name = [path stringByDeletingPathExtension];
-            NSString *extension = [path pathExtension];
-            filePath = [[NSBundle mainBundle] pathForResource:name ofType:extension];
-            break;
-        }
-        if([style hasPrefix:@"documents://"]) {
-            filePath = [EStyleHelper documentsResource:style];
-            break;
-        }
-    } while (false);
-    EStylesheet *sheet = [EStylesheet stylesheet];
-    [sheet loadFromFile:filePath];
-    [EStyleEngine applyStylesheet:sheet toStyleable:view];
-     */
     return view;
 }
 
-+ (id)buildViewFromConfig:(NSDictionary *)config {
++ (id)buildViewFromSource:(NSString *)source {
+    NSDictionary *config = [EStyleHelper stringToJsonDict:source];
+    return [EStyleEngine buildViewFromDict:config];
+}
+
++ (id)buildViewFromConfigNonRecursively:(NSDictionary *)config {
     NSString *class = config[@"class"];
     UIView *view = [[NSClassFromString(class) alloc] init];
     view.phase = Building;
@@ -314,14 +310,7 @@ DEF_SELECTOR(_none_, ^);
     [ruleset addRulesFrom:config];
     NSMutableDictionary *rulesets = [NSMutableDictionary dictionaryWithObject:ruleset forKey:ruleset.pesudoClass];
     [view setRulesets:rulesets];
-    //[EStyleEngine updateStyleNonRecursively:view isPadding:NO];
     return view;
 }
-
-#pragma mark - rule action
-
-
-#pragma mark - value convert
-
 
 @end

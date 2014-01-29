@@ -74,6 +74,10 @@ static NSString *const kEStylePhaseKey = @"kEStylePhasetKey";
     [self addSubview:view];
 }
 
+-(void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass {
+    [EStyleEngine updateStyleRules:rules withPseudoClass:pseudoClass toStyleavle:self];
+}
+
 #pragma mark - build phase rule action
 
 DEF_BUILDING_PHASE_RULE_ACTION(class) {
@@ -99,11 +103,15 @@ DEF_BUILDING_PHASE_RULE_ACTION(styleClass) {
     return YES;
 }
 
-DEF_BUILDING_PHASE_RULE_ACTION(style) {
+DEF_BUILDING_PHASE_RULE_ACTION_WITH_ID_PARAMS(style) {
     if(isPaddingRule) {
-        NSString *filePath = STRING_TO_P(value, FilePath);
         EStylesheet *sheet = [EStylesheet stylesheet];
-        [sheet loadFromFile:filePath];
+        if([value isKindOfClass:[NSString class]]) {
+            NSString *filePath = STRING_TO_P(value, FilePath);
+            [sheet loadFromFile:filePath];
+        } else {
+            [sheet loadFromDict:value];
+        }
         [EStyleEngine applyStylesheet:sheet toStyleable:self];
         return YES;
     } else {
@@ -114,9 +122,8 @@ DEF_BUILDING_PHASE_RULE_ACTION(style) {
 DEF_BUILDING_PHASE_RULE_ACTION_WITH_ID_PARAMS(subviews) {
     NSArray *configs = value;
     for (NSDictionary *config in configs) {
-        id view = [EStyleEngine buildViewFromConfig:config];
+        id view = [EStyleEngine buildViewFromConfigNonRecursively:config];
         [self addSubview:view];
-        //[EStyleEngine updateStyle:view];
     }
     return YES;
 }
@@ -477,6 +484,33 @@ DEF_RULE_ACTION(padding) {
     return YES;
 }
 
+DEF_RULE_ACTION(text) {
+    return YES;
+}
+
+DEF_RULE_ACTION(text_color) {
+    return YES;
+}
+
+DEF_RULE_ACTION(image) {
+    return YES;
+}
+
+DEF_RULE_ACTION(image_web) {
+    return YES;
+}
+
+DEF_RULE_ACTION(font) {
+    return YES;
+}
+
+DEF_RULE_ACTION(text_align) {
+    return YES;
+}
+
+DEF_RULE_ACTION(text_shadow) {
+    return YES;
+}
 
 
 @end
