@@ -1,9 +1,7 @@
 //
 //  EStyleEngine.m
-//  yixin_iphone
 //
 //  Created by Xuhui on 14-1-13.
-//  Copyright (c) 2014年 Netease. All rights reserved.
 //
 
 #include <objc/message.h>
@@ -95,7 +93,7 @@ typedef id (^BuildinFuction)(NSString *);
     if(!tmp) {
         tmp = [NSMutableDictionary dictionary];
     }
-    [EStyleEngine mergeRulesets:ruleset.ruleset toRulesets:tmp];
+    [EStyleEngine mergeRulesets:@{pseudoClass: ruleset} toRulesets:tmp];
     [styleable setRulesets:tmp];
     [styleable setPhase:Styling];
     [EStyleEngine updateStyle:styleable];

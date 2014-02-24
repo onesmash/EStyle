@@ -1,9 +1,7 @@
 //
 //  EStyleRuleset.h
-//  yixin_iphone
 //
 //  Created by Xuhui on 14-1-13.
-//  Copyright (c) 2014年 Netease. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -15,7 +13,7 @@
 
 @property (readonly, copy) NSString *pesudoClass;
 
-@property (readonly, strong) NSDictionary *ruleset;
+//@property (readonly, strong) NSDictionary *ruleset;
 
 - (id)initWithPesudoclass:(NSString *)pesudoClass;
 

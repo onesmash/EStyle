@@ -1,9 +1,7 @@
 //
 //  UIView+EStyling.m
-//  yixin_iphone
 //
 //  Created by Xuhui on 14-1-13.
-//  Copyright (c) 2014年 Netease. All rights reserved.
 //
 
 #include <objc/message.h>
@@ -74,8 +72,20 @@ static NSString *const kEStylePhaseKey = @"kEStylePhasetKey";
     [self addSubview:view];
 }
 
--(void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass {
+- (void)updateStyleRules:(NSDictionary *)rules withPseudoClass:(NSString *)pseudoClass {
     [EStyleEngine updateStyleRules:rules withPseudoClass:pseudoClass toStyleavle:self];
+}
+
+- (void)sizeToFitSubviews {
+    CGFloat width = 0.0f;
+    CGFloat height = 0.0f;
+    for (UIView *subview in [self subviews]) {
+        CGFloat w = subview.frame.origin.x + subview.frame.size.width;
+        CGFloat h = subview.frame.origin.y + subview.frame.size.height;
+        width = MAX(width, w);
+        height = MAX(height, h);
+    }
+    [self setFrame:CGRectMake(self.frame.origin.x, self.frame.origin.y, width, height)];
 }
 
 #pragma mark - build phase rule action
@@ -276,7 +286,11 @@ DEF_RULE_ACTION(width) {
             if(isPaddingRule) {
                 CGRect frame = self.frame;
                 CGFloat height = frame.size.height;
-                [self sizeToFit];
+                if([self isMemberOfClass:[UIView class]]) {
+                    [self sizeToFitSubviews];
+                } else {
+                    [self sizeToFit];
+                }
                 frame = self.frame;
                 frame.size.height = height;
                 self.frame = frame;
@@ -307,7 +321,11 @@ DEF_RULE_ACTION(height) {
             if(isPaddingRule) {
                 CGRect frame = self.frame;
                 CGFloat width = frame.size.width;
-                [self sizeToFit];
+                if([self isMemberOfClass:[UIView class]]) {
+                    [self sizeToFitSubviews];
+                } else {
+                    [self sizeToFit];
+                }
                 frame = self.frame;
                 frame.size.width = width;
                 self.frame = frame;
